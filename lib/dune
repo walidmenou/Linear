@@ -1,2 +1,3 @@
 (library
- (name linear))
+ (name linear)
+ (modules ast parser util))
