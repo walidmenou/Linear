@@ -1,5 +1,10 @@
+open Ast
+
 type 'a t = char list -> ('a * char list) option
 (** Monad Type *)
+
+val run : 'a t -> string -> 'a
+(** Monad Run Function, applies the parser `p` to the string `s` *)
 
 val return : 'a -> 'a t
 (** Wrapper Function: always succeeds without consuming the input *)
@@ -33,20 +38,33 @@ val many : 'a t -> 'a list t
 val some : 'a t -> 'a list t
 (** Repeats the given parser one or more times *)
 
+val sepby : 'a t -> 'b t -> 'a list t
+(** Parses multiple instances of the first parser separated by instances of the
+    second parser *)
+
 val map : ('a -> 'b) -> 'a t -> 'b t
 (** Applies the given function to the result of the parser *)
 
 val maybe : 'a t -> 'a option t
-(** Always succeeds, returns `None` if the given parser fails and Some x if it succeds *)
+(** Always succeeds, returns `None` if the given parser fails and Some x if it
+    succeds *)
 
-val number : int t
+val nat : int t
 (** Parses a string representing a number and converts it to an integer *)
+
+val natural : int t
+(** Parses a natural number and consumes all spaces that come after it *)
+
+val integer : int t
+(** Parses an integer (positive or negative) and consumes all spaces that come
+    after it *)
 
 val spaces : char list t
 (** Parses a sequence of contiguous spaces *)
 
 val token : 'a t -> 'a t
 (** Runs the parser and consumes all spaces that come after it *)
+
 val keyword : string -> unit t
 (** Parses the given keyword string *)
 
@@ -65,11 +83,22 @@ val alphanumeric : char t
 val ident : string t
 (** parses an identifier: alpha character followed by alphanumeric characters *)
 
-val int_lit : Ast.expr t
+val int_lit : expr t
 (** Parses an integer Literal expression, e.g: "123" *)
 
-val bool_lit : Ast.expr t
+val bool_lit : expr t
 (** Parses an boolean Literal expression, e.g: "true"*)
 
-val unit_lit : Ast.expr t
+val unit_lit : expr t
 (** Parses () *)
+
+val addop : binary_op t
+(** Parses an addition or subtraction operator *)
+
+val mulop : binary_op t
+(** Parses a multiplication or division operator *)
+
+val chain_left : binary_op t -> expr t -> expr t
+val expr : expr t
+val mul_expr : expr t
+val factor : expr t
