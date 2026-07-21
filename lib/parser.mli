@@ -99,6 +99,13 @@ val mulop : binary_op t
 (** Parses a multiplication or division operator *)
 
 val chain_left : binary_op t -> expr t -> expr t
+(** Parses a chain of expressions separated by the given operator type *)
+
 val expr : expr t
+(** Parses an arithmetic expression *)
+
 val mul_expr : expr t
+(** Parses a multiplicative expression *)
+
 val factor : expr t
+(** Parses an integer or a parenthesized arithmetic expression *)
