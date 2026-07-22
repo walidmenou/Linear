@@ -3,7 +3,7 @@ open Ast
 type 'a t = char list -> ('a * char list) option
 (** Monad Type *)
 
-val run : 'a t -> string -> 'a
+val run : 'a t -> string -> ('a, string) result
 (** Monad Run Function, applies the parser `p` to the string `s` *)
 
 val return : 'a -> 'a t
@@ -130,3 +130,6 @@ val fun_expr : expr t
 
 val app_expr : expr t
 (** Parses the application of a function f on an expression e *)
+
+val expr : expr t
+(** Parses an expression *)

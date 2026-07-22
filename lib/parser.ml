@@ -3,7 +3,7 @@ open Ast
 
 type 'a t = char list -> ('a * char list) option
 
-let run p s = explode s |> p |> Option.get |> fst
+let keywords = [ "let"; "in"; "fun"; "if"; "then"; "else" ]
 let return x = fun input -> Some (x, input)
 let none = fun _ -> None
 
@@ -49,7 +49,15 @@ let integer = token int
 
 let keyword s =
   let rec check = function [] -> return () | c :: cs -> char c |>> check cs in
-  token (check (explode s))
+  token (check (explode s)) |*> fun () ->
+  fun input ->
+   match input with
+   | c :: _
+     when match c with
+          | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> true
+          | _ -> false ->
+       None
+   | _ -> Some ((), input)
 
 let between p1 p2 p = p1 |>> p <<| p2
 let parenthesized p = between (token (char '(')) (token (char ')')) p
@@ -57,13 +65,15 @@ let alpha = satisfies (function 'a' .. 'z' | 'A' .. 'Z' -> true | _ -> false)
 
 let alphanumeric =
   satisfies (function
-    | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' -> true
+    | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> true
     | _ -> false)
 
 let ident =
   token
     ( alpha |*> fun x ->
-      many alphanumeric |*> fun xs -> return (ltos (x :: xs)) )
+      many alphanumeric |*> fun xs ->
+      let s = ltos (x :: xs) in
+      if List.mem s keywords then none else return s )
 
 let int_lit = integer |*> fun x -> return (Lit (Int x))
 
@@ -72,6 +82,14 @@ let bool_lit =
   <|> (keyword "false" |>> return (Lit (Bool false)))
 
 let unit_lit = keyword "()" |>> return (Lit Unit)
+
+let string_lit =
+  token
+    ( between (char '"') (char '"') (many (satisfies (fun c -> c != '"')))
+    |*> fun cs -> return (Lit (String (ltos cs))) )
+
+let val_expr = ident |*> fun x -> return (Val x)
+let lit_expr = int_lit <|> bool_lit <|> unit_lit <|> string_lit
 
 let addop =
   keyword "+" |*> (fun _ -> return Add) <|> (char '-' |*> fun _ -> return Sub)
@@ -113,20 +131,19 @@ let chain_cmps op_p exp_p =
       exp_p |*> fun exp -> return (op, exp) )
   |*> fun pairs -> return (cmp_helper first pairs)
 
-let val_expr = ident |*> fun x -> return (Val x)
-let lit_expr = int_lit <|> bool_lit <|> unit_lit
-
-let rec arith_expr input = chain_left eqop add_expr input
-and add_expr input = chain_left addop mul_expr input
-and mul_expr input = chain_left mulop atom_expr input
-and atom_expr input = (lit_expr <|> val_expr <|> parenthesized expr) input
+let rec expr input = (if_expr <|> fun_expr <|> let_expr <|> cmp_expr) input
 and cmp_expr input = chain_cmps cmpop arith_expr input
+and arith_expr input = chain_left eqop add_expr input
+and add_expr input = chain_left addop mul_expr input
+and mul_expr input = chain_left mulop app_expr input
 
 and app_expr input =
   ( atom_expr |*> fun f ->
     many atom_expr |*> fun args ->
     return (List.fold_left (fun acc arg -> App (acc, arg)) f args) )
     input
+
+and atom_expr input = (lit_expr <|> val_expr <|> parenthesized expr) input
 
 and if_expr input =
   ( keyword "if" |>> expr |*> fun exp1 ->
@@ -145,5 +162,8 @@ and let_expr input =
     keyword "in" |>> expr |*> fun exp2 -> return (Let (id, exp1, exp2)) )
     input
 
-and expr input =
-  (if_expr <|> fun_expr <|> let_expr <|> arith_expr <|> app_expr) input
+let run p s =
+  match p (explode s) with
+  | Some (res, []) -> Ok res
+  | Some (_, rest) -> Error ("Unparsed trailing input " ^ ltos rest)
+  | _ -> Error "Parse error"
