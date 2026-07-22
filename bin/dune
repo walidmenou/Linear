@@ -1,4 +1,4 @@
 (executable
- (public_name linear)
+ (public_name linearA)
  (name main)
- (libraries linear))
+ (libraries linearA))

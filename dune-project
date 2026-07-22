@@ -1,22 +1,20 @@
 (lang dune 3.20)
 
-(name linear)
+(name linearA)
 
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github walidmenou/linear))
 
-(authors "Author Name <author@example.com>")
-
-(maintainers "Maintainer Name <maintainer@example.com>")
+(authors "Walid Menou <contact@walidmenou.com>")
 
 (license LICENSE)
 
 (documentation https://url/to/documentation)
 
 (package
- (name linear)
+ (name linearA)
  (synopsis "A short synopsis")
  (description "A longer description")
  (depends ocaml)
