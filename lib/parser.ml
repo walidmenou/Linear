@@ -43,7 +43,7 @@ let nat =
   some digit |*> fun xs ->
   return (List.fold_left (fun acc x -> (acc * 10) + x) 0 xs)
 
-let int = char '-' |>> nat
+let int = char '-' |>> nat |*> (fun x -> return (-x)) <|> nat
 let natural = token nat
 let integer = token int
 
@@ -74,21 +74,76 @@ let bool_lit =
 let unit_lit = keyword "()" |>> return (Lit Unit)
 
 let addop =
-  char '+' |*> (fun _ -> return Add) <|> (char '-' |*> fun _ -> return Sub)
+  keyword "+" |*> (fun _ -> return Add) <|> (char '-' |*> fun _ -> return Sub)
 
 let mulop =
-  char '*' |*> (fun _ -> return Mul) <|> (char '/' |*> fun _ -> return Div)
+  keyword "*" |*> (fun _ -> return Mul) <|> (char '/' |*> fun _ -> return Div)
 
-let chain_left op exp =
-  exp |*> fun r ->
+let eqop = keyword "=" |*> fun _ -> return Equal
+
+let cmpop =
+  keyword "<="
+  |*> (fun _ -> return Leq)
+  <|> (keyword ">=" |*> fun _ -> return Geq)
+  <|> (keyword "<" |*> fun _ -> return Less)
+  <|> (keyword ">" |*> fun _ -> return Greater)
+
+let chain_left op_p exp_p =
+  exp_p |*> fun r ->
   many
-    ( op |*> fun o ->
-      exp |*> fun e -> return (o, e) )
+    ( op_p |*> fun op ->
+      exp_p |*> fun exp -> return (op, exp) )
   |*> fun rs ->
-  return (List.fold_left (fun acc (o, e) -> BinOp (acc, o, e)) r rs)
+  return (List.fold_left (fun acc (op, exp) -> BinOp (acc, op, exp)) r rs)
 
-let rec expr input = chain_left addop mul_expr input
-and mul_expr input = chain_left mulop factor input
+let cmp_helper first pairs =
+  let cmps, _ =
+    List.fold_left
+      (fun (cmps, prev) (op, exp) -> (BinOp (prev, op, exp) :: cmps, exp))
+      ([], first) pairs
+  in
+  match List.rev cmps with
+  | [] -> first
+  | c :: cs -> List.fold_left (fun acc cmp -> BinOp (acc, And, cmp)) c cs
 
-and factor input =
-  (integer |*> (fun x -> return (Lit (Int x))) <|> parenthesized expr) input
+let chain_cmps op_p exp_p =
+  exp_p |*> fun first ->
+  many
+    ( op_p |*> fun op ->
+      exp_p |*> fun exp -> return (op, exp) )
+  |*> fun pairs -> return (cmp_helper first pairs)
+
+let val_expr = ident |*> fun x -> return (Val x)
+let lit_expr = int_lit <|> bool_lit <|> unit_lit
+
+let rec arith_expr input = chain_left eqop add_expr input
+and add_expr input = chain_left addop mul_expr input
+and mul_expr input = chain_left mulop atom_expr input
+and atom_expr input = (lit_expr <|> val_expr <|> parenthesized expr) input
+and cmp_expr input = chain_cmps cmpop arith_expr input
+
+and app_expr input =
+  ( atom_expr |*> fun f ->
+    many atom_expr |*> fun args ->
+    return (List.fold_left (fun acc arg -> App (acc, arg)) f args) )
+    input
+
+and if_expr input =
+  ( keyword "if" |>> expr |*> fun exp1 ->
+    keyword "then" |>> expr |*> fun exp2 ->
+    keyword "else" |>> expr |*> fun exp3 -> return (If (exp1, exp2, exp3)) )
+    input
+
+and fun_expr input =
+  ( keyword "fun" |>> ident |*> fun id ->
+    keyword "->" |>> expr |*> fun exp -> return (Fun (id, exp)) )
+    input
+
+and let_expr input =
+  ( keyword "let" |>> ident |*> fun id ->
+    keyword "=" |>> expr |*> fun exp1 ->
+    keyword "in" |>> expr |*> fun exp2 -> return (Let (id, exp1, exp2)) )
+    input
+
+and expr input =
+  (if_expr <|> fun_expr <|> let_expr <|> arith_expr <|> app_expr) input

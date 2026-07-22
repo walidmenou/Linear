@@ -101,11 +101,32 @@ val mulop : binary_op t
 val chain_left : binary_op t -> expr t -> expr t
 (** Parses a chain of expressions separated by the given operator type *)
 
-val expr : expr t
+val arith_expr : expr t
 (** Parses an arithmetic expression *)
 
 val mul_expr : expr t
 (** Parses a multiplicative expression *)
 
-val factor : expr t
-(** Parses an integer or a parenthesized arithmetic expression *)
+val val_expr : expr t
+(** Parses a reference to a variable *)
+
+val lit_expr : expr t
+(** Parses a literal, e.g: 12, true or () *)
+
+val atom_expr : expr t
+(** Parses an atomic (i.e irreducile) expression, e.g: `x`, `(<expr>)`, `12` *)
+
+val cmp_expr : expr t
+(** Parses a chain of comaprisons, e.g: 0 <= x < 12 < 2 *)
+
+val let_expr : expr t
+(** Parses a `let ... = ... in ...` expression *)
+
+val if_expr : expr t
+(** Parses an `if ... then ... else ...` expression *)
+
+val fun_expr : expr t
+(** Parses a lambda function expression *)
+
+val app_expr : expr t
+(** Parses the application of a function f on an expression e *)
