@@ -1,4 +1,4 @@
-type ident = string (* identifier of variables *)
+type ident = string
 type literal = Int of int | Bool of bool | String of string | Unit
 type typ = Int | Bool | Unit | Comma | Arrow
 type uop = Negate
@@ -18,8 +18,11 @@ type binary_op =
   | Greater
 
 type expr =
+  | Int of int
+  | Bool of bool
+  | String of string
+  | Unit
   | Val of ident
-  | Lit of literal
   | BinOp of expr * binary_op * expr
   | Let of ident * expr * expr
   | If of expr * expr * expr

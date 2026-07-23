@@ -81,27 +81,27 @@ let ident =
       let s = ltos (x :: xs) in
       if List.mem s keywords then none else return s )
 
-let int_lit = integer |*> fun x -> return (Lit (Int x))
+let int_lit = integer |*> fun x -> return (Int x)
 
 let bool_lit =
-  keyword "true" |>> return (Lit (Bool true))
-  <|> (keyword "false" |>> return (Lit (Bool false)))
+  keyword "true" |>> return (Bool true)
+  <|> (keyword "false" |>> return (Bool false))
 
-let unit_lit = keyword "()" |>> return (Lit Unit)
+let unit_lit = keyword "()" |>> return Unit
 
 let string_lit =
   token
     ( between (char '"') (char '"') (many (satisfies (fun c -> c != '"')))
-    |*> fun cs -> return (Lit (String (ltos cs))) )
+    |*> fun cs -> return (String (ltos cs)) )
 
 let val_expr = ident |*> fun x -> return (Val x)
 let lit_expr = int_lit <|> bool_lit <|> unit_lit <|> string_lit
 
 let addop =
-  keyword "+" |*> (fun _ -> return Add) <|> (keyword '-' |*> fun _ -> return Sub)
+  keyword "+" |*> (fun _ -> return Add) <|> (keyword "-" |*> fun _ -> return Sub)
 
 let mulop =
-  keyword "*" |*> (fun _ -> return Mul) <|> (keyword '/' |*> fun _ -> return Div)
+  keyword "*" |*> (fun _ -> return Mul) <|> (keyword "/" |*> fun _ -> return Div)
 
 let eqop = keyword "=" |*> fun _ -> return Equal
 

@@ -1,11 +1,11 @@
 (lang dune 3.20)
 
-(name linearA)
+(name nomad)
 
 (generate_opam_files true)
 
 (source
- (github walidmenou/linear))
+ (github walidmenou/nomad))
 
 (authors "Walid Menou <contact@walidmenou.com>")
 
@@ -14,7 +14,7 @@
 (documentation https://url/to/documentation)
 
 (package
- (name linearA)
+ (name nomad)
  (synopsis "A short synopsis")
  (description "A longer description")
  (depends ocaml)

@@ -1,4 +1,4 @@
 (library
- (name linearA)
- (public_name linearA)
+ (name nomad)
+ (public_name nomad)
  (modules ast parser util))
