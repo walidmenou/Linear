@@ -49,15 +49,21 @@ let integer = token int
 
 let keyword s =
   let rec check = function [] -> return () | c :: cs -> char c |>> check cs in
-  token (check (explode s)) |*> fun () ->
+
+  let is_alphanum = function
+    | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> true
+    | _ -> false
+  in
+
+  let needs_boundary =
+    String.length s > 0 && is_alphanum s.[String.length s - 1]
+  in
+
+  check (explode s) |*> fun () ->
   fun input ->
    match input with
-   | c :: _
-     when match c with
-          | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> true
-          | _ -> false ->
-       None
-   | _ -> Some ((), input)
+   | c :: _ when needs_boundary && is_alphanum c -> None
+   | _ -> token (return ()) input
 
 let between p1 p2 p = p1 |>> p <<| p2
 let parenthesized p = between (token (char '(')) (token (char ')')) p
@@ -92,10 +98,10 @@ let val_expr = ident |*> fun x -> return (Val x)
 let lit_expr = int_lit <|> bool_lit <|> unit_lit <|> string_lit
 
 let addop =
-  keyword "+" |*> (fun _ -> return Add) <|> (char '-' |*> fun _ -> return Sub)
+  keyword "+" |*> (fun _ -> return Add) <|> (keyword '-' |*> fun _ -> return Sub)
 
 let mulop =
-  keyword "*" |*> (fun _ -> return Mul) <|> (char '/' |*> fun _ -> return Div)
+  keyword "*" |*> (fun _ -> return Mul) <|> (keyword '/' |*> fun _ -> return Div)
 
 let eqop = keyword "=" |*> fun _ -> return Equal
 
